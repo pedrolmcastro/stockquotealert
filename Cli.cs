@@ -65,7 +65,7 @@ public readonly record struct Parameter(string Name, string Description)
 }
 
 
-public readonly record struct Parsed(string Asset, double SellPrice, double BuyPrice);
+public readonly record struct Parsed(string Asset, decimal SellPrice, decimal BuyPrice);
 
 
 public static class Parser

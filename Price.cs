@@ -2,14 +2,14 @@
 
 public static class Parser
 {
-    public static bool TryParse(string input, out double result)
+    public static bool TryParse(string input, out decimal result)
     {
-        if (!double.TryParse(input, out result))
+        if (!decimal.TryParse(input, out result))
         {
             return false;
         }
 
-        if (result < 0.0)
+        if (result < 0.0m)
         {
             return false;
         }
