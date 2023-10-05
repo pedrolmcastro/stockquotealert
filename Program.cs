@@ -4,5 +4,8 @@
     {
         var parameters = Cli.Parser.Parse(args);
         Console.WriteLine(parameters);
+
+        var settings = Settings.Parser.Parse("appsettings.json");
+        Console.WriteLine(settings);
     }
 }
