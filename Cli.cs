@@ -4,7 +4,7 @@
 namespace Cli;
 
 
-public readonly struct Option
+internal readonly struct Option
 {
     private readonly string _long;
     private readonly string _short;
@@ -56,7 +56,7 @@ public readonly struct Option
 }
 
 
-public readonly record struct Parameter(string Name, string Description)
+internal readonly record struct Parameter(string Name, string Description)
 {
     public override string ToString()
     {
@@ -65,10 +65,10 @@ public readonly record struct Parameter(string Name, string Description)
 }
 
 
-public readonly record struct Parsed(string Asset, decimal SellPrice, decimal BuyPrice);
+internal readonly record struct Parsed(string Asset, decimal SellPrice, decimal BuyPrice);
 
 
-public static class Parser
+internal static class Parser
 {
     private const int ErrorCode = 1;
     private const string Description = "Asset stock price monitor";
@@ -78,9 +78,9 @@ public static class Parser
 
     private readonly static Parameter[] s_parameters = new Parameter[]
     {
-        new Parameter("asset", "Name of the market asset to monitor"),
-        new Parameter("sellPrice", "Selling reference price that notifies if price is greater"),
-        new Parameter("buyPrice", "Buying reference price that notifies if price is lower")
+        new Parameter("Asset", "Name of the market asset to monitor"),
+        new Parameter("SellPrice", "Selling reference price that notifies if price is greater"),
+        new Parameter("BuyPrice", "Buying reference price that notifies if price is lower")
     };
 
     private readonly static string s_usage =

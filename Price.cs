@@ -1,6 +1,6 @@
 ﻿namespace Price;
 
-public static class Parser
+internal static class Parser
 {
     public static bool TryParse(string input, out decimal result)
     {
