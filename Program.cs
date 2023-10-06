@@ -7,5 +7,10 @@
 
         var settings = Settings.Parser.Parse("appsettings.json");
         Console.WriteLine(settings);
+
+        foreach (var address in settings.Receivers)
+        {
+            Console.WriteLine(address.ToString());
+        }
     }
 }
