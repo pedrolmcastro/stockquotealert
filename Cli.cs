@@ -3,6 +3,8 @@
 
 namespace Cli;
 
+using System.Diagnostics.CodeAnalysis;
+
 
 internal readonly struct Option
 {
@@ -78,9 +80,9 @@ internal static class Parser
 
     private readonly static Parameter[] s_parameters = new Parameter[]
     {
-        new Parameter("Asset", "Name of the market asset to monitor"),
-        new Parameter("SellPrice", "Selling reference price that notifies if price is greater"),
-        new Parameter("BuyPrice", "Buying reference price that notifies if price is lower")
+        new("Asset", "Name of the market asset to monitor"),
+        new("SellPrice", "Selling reference price that notifies if the price is greater than it"),
+        new("BuyPrice", "Buying reference price that notifies if the price is lower than it")
     };
 
     private readonly static string s_usage =
@@ -91,22 +93,22 @@ internal static class Parser
     {
         if (args.Any(s_help.Match))
         {
-            HelpExit();
+            Help();
         }
 
         if (args.Count < s_parameters.Length)
         {
-            ErrorExit("Missing positional parameters");
+            Error("Missing positional parameters");
         }
 
         if (!Price.Parser.TryParse(args[1], out var sellPrice))
         {
-            ErrorExit($"Invalid selling reference price: {args[1]}");
+            Error($"Invalid selling reference price: {args[1]}");
         }
 
         if (!Price.Parser.TryParse(args[2], out var buyPrice))
         {
-            ErrorExit($"Invalid buying reference price: {args[2]}");
+            Error($"Invalid buying reference price: {args[2]}");
         }
 
         return new Parsed { Asset = args[0], SellPrice = sellPrice, BuyPrice = buyPrice };
@@ -124,8 +126,8 @@ internal static class Parser
     }
 
 
-    [System.Diagnostics.CodeAnalysis.DoesNotReturn]
-    private static void HelpExit()
+    [DoesNotReturn]
+    private static void Help()
     {
         var description = FormatItem("Description", Description);
         var parameters = FormatItems("Parameters", s_parameters);
@@ -136,10 +138,9 @@ internal static class Parser
         Environment.Exit(0);
     }
 
-    [System.Diagnostics.CodeAnalysis.DoesNotReturn]
-    private static void ErrorExit(string message)
+    [DoesNotReturn]
+    private static void Error(string message)
     {
-        Console.WriteLine($"{FormatItem("Error", message)}\n{FormatItem("Usage", s_usage)}");
-        Environment.Exit(ErrorCode);
+        Util.Error.Exit($"{message}\nUsage: {s_usage}", ErrorCode);
     }
 }
