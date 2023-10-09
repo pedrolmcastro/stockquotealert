@@ -4,61 +4,52 @@ using System.Collections.Concurrent;
 
 internal static class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
-        var parameters = Cli.Parser.Parse(args);
-        Logging.Logger.Log($"Parsed parameters: {parameters}");
+        var stock = Cli.Parser.Parse(args);
+        Util.Logger.Log($"Parsed CLI: Name = {stock}, SellPrice = {stock.SellPrice}, BuyPrice = {stock.BuyPrice}");
 
         var settings = Settings.Parser.Parse("appsettings.json");
-        Logging.Logger.Log($"Parsed settings: {settings}");
+        Util.Logger.Log($"Parsed settings: {settings}");
 
 
-        // Start the Consumer Task to consume the queue of emails
-
-        using var emails = new BlockingCollection<MailMessage>();
+        using var queue = new BlockingCollection<MailMessage>();
 
         Console.CancelKeyPress += delegate
         {
-            emails.CompleteAdding();
+            queue.CompleteAdding();
         };
 
-        using var consumer = Task.Run(
-            () => EmailConsumer(settings.Smtp.Host, settings.Smtp.Credential, emails, settings.Smtp.Period)
-        );
+
+        using var producer = Task.Run(() => Producer(stock, settings.Notify, queue, settings.Api.Period));
+        using var consumer = Task.Run(() => Consumer(settings.Host, queue));
+
+        await Task.WhenAll(producer, consumer);
+    }
 
 
-        // The Main Task produces emails to send
-
+    private static void Producer(Stock.Info stock, Email.Notify notify, BlockingCollection<MailMessage> queue, uint period)
+    {
         while (true)
         {
-            foreach (var receiver in settings.Smtp.Receivers)
+            foreach (var receiver in notify.Receivers)
             {
-                using var message = Email.Message.Buy(
-                    settings.Smtp.Sender,
-                    receiver,
-                    parameters.Asset,
-                    1.0M,
-                    parameters.BuyPrice
-                );
 
-                Logging.Logger.Log(
+                using var message = Email.Message.Buy(notify.Sender, receiver, stock, 1.0M);
+
+                Util.Logger.Log(
                     $"Enqueuing message: From = {message.From}, To = {message.To}, Subject = {message.Subject}"
                 );
 
-                emails.Add(message);
-                Thread.Sleep((int)settings.Smtp.Period);
+                queue.Add(message);
+                Thread.Sleep((int)period);
             }
         }
     }
     
 
-    private static void EmailConsumer(
-        Email.Host host,
-        Email.Credential credential,
-        BlockingCollection<MailMessage> queue,
-        uint period
-    ) {
-        using var client = new Email.Client(host, credential);
+    private static async void Consumer(Email.Host host, BlockingCollection<MailMessage> queue) {
+        using var client = new Email.Client(host);
 
         while (true)
         {
@@ -70,18 +61,23 @@ internal static class Program
             }
             catch (InvalidOperationException)
             {
-                // The queue concluded adding and is empty
+                // The queue concluded adding and is now empty
                 return;
             }
 
-            Logging.Logger.Log(
-                $"Sending message: From = {message.From}, To = {message.To}, Subject = {message.Subject}"
-            );
+            Util.Logger.Log($"Sending message: From = {message.From}, To = {message.To}, Subject = {message.Subject}");
 
-            client.Send(message);
+            try
+            {
+                await client.Send(message);
+            }
+            catch (Exception exception)
+            {
+                Util.Error.Exit($"Failed to send email: {exception.Message}", Email.Client.ErrorCode);
+            }
 
             // Avoid passing the SMTP server rate limit
-            Thread.Sleep((int)period);
+            Thread.Sleep((int)host.Period);
         }
     }
 }

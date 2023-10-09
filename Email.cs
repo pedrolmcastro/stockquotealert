@@ -7,42 +7,33 @@ using System.Net;
 using System.Net.Mail;
 
 
-internal readonly record struct Host(string Name, ushort Port);
 internal readonly record struct Credential(string Username, string Password);
+internal readonly record struct Host(string Name, ushort Port, Credential Credential, uint Period);
+
+
+internal readonly record struct Notify(MailAddress Sender, List<MailAddress> Receivers);
 
 
 internal static class Message
 {
-    public static MailMessage Buy(
-        MailAddress sender,
-        MailAddress receiver,
-        string asset,
-        decimal price,
-        decimal reference
-    ) {
+    public static MailMessage Buy(MailAddress sender, MailAddress receiver, Stock.Info stock, decimal price) {
         return new(sender, receiver)
         {
-            Subject = $"Buying {asset} is recomended",
+            Subject = $"Buying {stock} is recomended!",
             Headers = { { "Message-Id", $"<{Guid.NewGuid()}@{sender.Host}>" } },
-            Body = 
-                $"The monitored asset {asset} price is currently {price:C2}, which is lower" +
-                $" than the reference price of {reference:C2}, so buying it is recommended."
+            Body =
+                $"The monitored stock {stock} price is currently {price:C2}, which is lower " +
+                $"than the reference price of {stock.BuyPrice:C2}, so buying it is recommended."
         };
     }
 
-    public static MailMessage Sell(
-        MailAddress sender,
-        MailAddress receiver,
-        string asset,
-        decimal price,
-        decimal reference
-    ) {
+    public static MailMessage Sell(MailAddress sender, MailAddress receiver, Stock.Info stock, decimal price) {
         return new(sender, receiver)
         {
-            Subject = $"Selling {asset} is recomended",
+            Subject = $"Selling {stock} is recomended!",
             Body =
-                $"The monitored asset {asset} price is currently {price:C2}, which is greater" +
-                $" than the reference price of {reference:C2}, so selling it is recommended."
+                $"The monitored asset {stock} price is currently {price:C2}, which is greater " +
+                $"than the reference price of {stock.SellPrice:C2}, so selling it is recommended."
         };
     }
 }
@@ -50,42 +41,29 @@ internal static class Message
 
 internal class Client : IDisposable
 {
-    private const int ErrorCode = 3;
+    public const int ErrorCode = 3;
     
     private readonly SmtpClient _client;
 
 
-    public Client(Host host, Credential credential)
+    public Client(Host host)
     {
         try
         {
             _client = new(host.Name, host.Port)
             {
-                Credentials = new NetworkCredential(credential.Username, credential.Password),
+                Credentials = new NetworkCredential(host.Credential.Username, host.Credential.Password),
                 EnableSsl = true
             };
         }
-        catch (Exception e)
+        catch (Exception exception)
         {
-            Util.Error.Exit($"Failed to create SMTP client: {e.Message}", ErrorCode);
+            Util.Error.Exit($"Failed to create SMTP client: {exception.Message}", ErrorCode);
         }
     }
 
-    public void Dispose()
-    {
-        _client.Dispose();
-    }
+    public void Dispose() => _client.Dispose();
 
 
-    public void Send(MailMessage message)
-    {
-        try
-        {
-            _client.Send(message);
-        }
-        catch (Exception e)
-        {
-            Util.Error.Exit($"Failed to send email: {e.Message}", ErrorCode);
-        }
-    }
+    public Task Send(MailMessage message) => _client.SendMailAsync(message);
 }

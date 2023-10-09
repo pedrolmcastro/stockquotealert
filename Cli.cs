@@ -26,19 +26,16 @@ internal readonly struct Option
     
     
     public string Long
-    { 
-        get { return "--" + _long; }
+    {
+        get => $"--{_long}";
     }
 
     public string Short
     {
-        get { return "-" + _short; }
+        get => $"-{_short}";
     }
 
-    public override string ToString()
-    {
-        return $"{Long}, {Short}: {Description}";
-    }
+    public override string ToString() => $"{Long}, {Short}: {Description}";
 
 
     public bool Match(string matched)
@@ -60,27 +57,21 @@ internal readonly struct Option
 
 internal readonly record struct Parameter(string Name, string Description)
 {
-    public override string ToString()
-    {
-        return $"{Name}: {Description}";
-    }
+    public override string ToString() => $"{Name}: {Description}";
 }
-
-
-internal readonly record struct Parsed(string Asset, decimal SellPrice, decimal BuyPrice);
 
 
 internal static class Parser
 {
     private const int ErrorCode = 1;
-    private const string Description = "Asset stock price monitor";
+    private const string Description = "Stock price monitor";
 
     private readonly static string s_executable = Environment.GetCommandLineArgs()[0];
     private readonly static Option s_help = new("help", "Show help and usage information");
 
     private readonly static Parameter[] s_parameters = new Parameter[]
     {
-        new("Asset", "Name of the market asset to monitor"),
+        new("StockName", "Name of the stock to be monitored"),
         new("SellPrice", "Selling reference price that notifies if the price is greater than it"),
         new("BuyPrice", "Buying reference price that notifies if the price is lower than it")
     };
@@ -89,7 +80,7 @@ internal static class Parser
         $"{s_executable} [{s_help.Short}] {string.Join(" ", s_parameters.Select(param => param.Name))}";
 
 
-    public static Parsed Parse(IList<string> args)
+    public static Stock.Info Parse(IList<string> args)
     {
         if (args.Any(s_help.Match))
         {
@@ -101,17 +92,17 @@ internal static class Parser
             Error("Missing positional parameters");
         }
 
-        if (!Price.Parser.TryParse(args[1], out var sellPrice))
+        if (!Stock.Price.TryParse(args[1], out var sellPrice))
         {
             Error($"Invalid selling reference price: {args[1]}");
         }
 
-        if (!Price.Parser.TryParse(args[2], out var buyPrice))
+        if (!Stock.Price.TryParse(args[2], out var buyPrice))
         {
             Error($"Invalid buying reference price: {args[2]}");
         }
 
-        return new Parsed { Asset = args[0], SellPrice = sellPrice, BuyPrice = buyPrice };
+        return new() { Name = args[0], SellPrice = sellPrice, BuyPrice = buyPrice };
     }
 
 

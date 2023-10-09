@@ -1,6 +1,5 @@
 ﻿namespace Settings;
 
-
 using System.Net.Mail;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -61,17 +60,8 @@ internal sealed class MailAddressJsonConverter : JsonConverter<MailAddress>
 }
 
 
-internal readonly record struct Smtp(
-    Email.Host Host,
-    Email.Credential Credential,
-    MailAddress Sender,
-    List<MailAddress> Receivers,
-    uint Period
-);
-
-internal readonly record struct Api(uint Period);
-
-internal readonly record struct Parsed(Smtp Smtp, Api Api);
+internal readonly record struct ParsedApi(uint Period);
+internal readonly record struct Parsed(Email.Host Host, Email.Notify Notify, ParsedApi Api);
 
 
 internal static class Parser
@@ -98,9 +88,9 @@ internal static class Parser
             var content = File.ReadAllText(filepath);
             parsed = JsonSerializer.Deserialize<Parsed>(content, options);
         }
-        catch (Exception e)
+        catch (Exception exception)
         {
-            Util.Error.Exit($"Failed to parse settings file: {e.Message}", ErrorCode);
+            Util.Error.Exit($"Failed to parse settings file: {exception.Message}", ErrorCode);
         }
 
         return parsed;

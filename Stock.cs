@@ -1,6 +1,13 @@
-﻿namespace Price;
+﻿namespace Stock;
 
-internal static class Parser
+
+internal readonly record struct Info(string Name, decimal BuyPrice, decimal SellPrice)
+{
+    public override string ToString() => Name;
+}
+
+
+internal static class Price
 {
     public static bool TryParse(string input, out decimal result)
     {
