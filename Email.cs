@@ -5,6 +5,7 @@ namespace Email;
 
 using System.Net;
 using System.Net.Mail;
+using System.Reflection;
 
 
 internal readonly record struct Credential(string Username, string Password);
@@ -19,8 +20,8 @@ internal static class Message
     public static MailMessage Buy(MailAddress sender, MailAddress receiver, Stock.Info stock, decimal price) {
         return new(sender, receiver)
         {
+            Headers = { { "Message-Id", Id(sender) } },
             Subject = $"Buying {stock} is recomended!",
-            Headers = { { "Message-Id", $"<{Guid.NewGuid()}@{sender.Host}>" } },
             Body =
                 $"The monitored stock {stock} price is currently {price:C2}, which is lower " +
                 $"than the reference price of {stock.BuyPrice:C2}, so buying it is recommended."
@@ -30,12 +31,16 @@ internal static class Message
     public static MailMessage Sell(MailAddress sender, MailAddress receiver, Stock.Info stock, decimal price) {
         return new(sender, receiver)
         {
+            Headers = { { "Message-Id", Id(sender) } },
             Subject = $"Selling {stock} is recomended!",
             Body =
                 $"The monitored asset {stock} price is currently {price:C2}, which is greater " +
                 $"than the reference price of {stock.SellPrice:C2}, so selling it is recommended."
         };
     }
+
+
+    private static string Id(MailAddress sender) => $"<{Guid.NewGuid()}@{sender.Host}>";
 }
 
 
