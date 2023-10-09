@@ -5,7 +5,6 @@ namespace Email;
 
 using System.Net;
 using System.Net.Mail;
-using System.Reflection;
 
 
 internal readonly record struct Credential(string Username, string Password);
