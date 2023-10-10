@@ -23,6 +23,18 @@ On top of the CLI arguments, this app uses a settings file called [`appsettings.
 
 > **Warning:** [`appsettings.json`](appsettings.json) must be in the directory where the app is launched for it to work. The project solution is configured to automatically copy this file to the directory where the executable is built. If, for some reason, this doesn't work, try manually copying the file.
 
+### Error handling
+
+Because this is a simple study project, any error that happens, like failing to connect to the SMTP server, will abort the program. The error code returned indicates the section where the error occurred.
+
+Exit code | Description
+--------- | --------------------------------------------------------
+0         | Successul exit
+1         | Failure while parsing the CLI arguments
+2         | Failure while parsing the JSON settings file
+3         | Failure connecting or communicating with the SMTP server
+4         | Failure connecting or communicating with the stock API
+
 
 ## About this implementation
 
