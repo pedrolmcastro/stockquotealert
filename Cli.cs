@@ -71,7 +71,7 @@ internal static class Parser
 
     private readonly static Parameter[] s_parameters = new Parameter[]
     {
-        new("StockName", "Name of the stock to be monitored"),
+        new("StockTicker", "Ticker symbol of the stock to be monitored"),
         new("SellPrice", "Selling reference price that notifies if the price is greater than it"),
         new("BuyPrice", "Buying reference price that notifies if the price is lower than it")
     };
@@ -102,7 +102,7 @@ internal static class Parser
             Error($"Invalid buying reference price: {args[2]}");
         }
 
-        return new() { Name = args[0], SellPrice = sellPrice, BuyPrice = buyPrice };
+        return new() { Ticker = args[0], SellPrice = sellPrice, BuyPrice = buyPrice };
     }
 
 

@@ -27,7 +27,7 @@ internal class Client
         
         try
         {
-            using var response = await _client.GetAsync(Url(stock.Name, _token));
+            using var response = await _client.GetAsync(Url(stock.Ticker, _token));
             response.EnsureSuccessStatusCode();
 
             content = await response.Content.ReadAsStringAsync();

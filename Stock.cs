@@ -1,9 +1,9 @@
 ﻿namespace Stock;
 
 
-internal readonly record struct Info(string Name, decimal BuyPrice, decimal SellPrice)
+internal readonly record struct Info(string Ticker, decimal BuyPrice, decimal SellPrice)
 {
-    public override string ToString() => Name;
+    public override string ToString() => Ticker;
 }
 
 
