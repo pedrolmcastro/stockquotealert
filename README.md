@@ -40,13 +40,13 @@ The overwall program architecture is based on the **producer/consumer pattern**,
 
 ### Project structure
 
-- **Program.cs:** the main execution flow separeted into 3 functions: `Main()`, `Producer()` and `Consumer()`.
-- **Stock.cs:** definition for a stock info `struct` and a parser for prices represented in `decimal`.
-- **Util.cs:** simple utilities like a global logger and an error `Exit()` function.
-- **Cli.cs:** parser for the CLI arguments and definition of the `--help` message.
-- **Settings.cs:** parser for the JSON settings file.
-- **Email.cs:** abstraction over the SMTP client and builders for the recommended action messages.
-- **Api.cs:** abstraction over the HTTP client that communicates with the stock API.
+- [**Program.cs:**](Program.cs) the main execution flow separeted into 3 functions: `Main()`, `Producer()` and `Consumer()`.
+- [**Stock.cs:**](Stock.cs) definition for a stock info `struct` and a parser for prices represented in `decimal`.
+- [**Util.cs:**](Util.cs) simple utilities like a global logger and an error `Exit()` function.
+- [**Cli.cs:**](Cli.cs) parser for the CLI arguments and definition of the `--help` message.
+- [**Settings.cs:**](Settings.cs) parser for the JSON settings file.
+- [**Email.cs:**](Email.cs) abstraction over the SMTP client and builders for the recommended action messages.
+- [**Api.cs:**](Api.cs) abstraction over the HTTP client that communicates with the stock API.
 
 ### Coupling
 
