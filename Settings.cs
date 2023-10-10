@@ -60,8 +60,7 @@ internal sealed class MailAddressJsonConverter : JsonConverter<MailAddress>
 }
 
 
-internal readonly record struct ParsedApi(uint Period);
-internal readonly record struct Parsed(Email.Host Host, Email.Notify Notify, ParsedApi Api);
+internal readonly record struct Parsed(Email.Host Host, Email.Notify Notify, Api.Info Api);
 
 
 internal static class Parser

@@ -45,7 +45,7 @@ internal static class Message
 
 internal class Client : IDisposable
 {
-    public const int ErrorCode = 3;
+    private const int ErrorCode = 3;
     
     private readonly SmtpClient _client;
 
@@ -69,5 +69,15 @@ internal class Client : IDisposable
     public void Dispose() => _client.Dispose();
 
 
-    public Task Send(MailMessage message) => _client.SendMailAsync(message);
+    public async Task Send(MailMessage message)
+    {
+        try
+        {
+            await _client.SendMailAsync(message);
+        }
+        catch (Exception exception)
+        {
+            Util.Error.Exit($"Failed to send email: {exception.Message}", ErrorCode);
+        }
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Net.Mail;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 
 internal static class Program
@@ -21,34 +22,52 @@ internal static class Program
         };
 
 
-        using var producer = Task.Run(() => Producer(stock, settings.Notify, queue, settings.Api.Period));
+        using var producer = Task.Run(() => Producer(settings.Api, stock, settings.Notify, queue));
         using var consumer = Task.Run(() => Consumer(settings.Host, queue));
 
         await Task.WhenAll(producer, consumer);
     }
 
 
-    private static void Producer(Stock.Info stock, Email.Notify notify, BlockingCollection<MailMessage> queue, uint period)
+    [DoesNotReturn]
+    private static async Task Producer(Api.Info api, Stock.Info stock, Email.Notify notify, BlockingCollection<MailMessage> queue)
     {
+        var client = new Api.Client(api);
+        
         while (true)
         {
-            foreach (var receiver in notify.Receivers)
+            var price = await client.Get(stock);
+
+            if (price >= stock.SellPrice)
             {
+                Util.Logger.Log($"Recommend selling since the price is {price:C2} >= {stock.SellPrice:C2}");
 
-                using var message = Email.Message.Buy(notify.Sender, receiver, stock, 1.0M);
-
-                Util.Logger.Log(
-                    $"Enqueuing message: From = {message.From}, To = {message.To}, Subject = {message.Subject}"
-                );
-
-                queue.Add(message);
-                Thread.Sleep((int)period);
+                foreach (var receiver in notify.Receivers)
+                {
+                    var message = Email.Message.Sell(notify.Sender, receiver, stock, price);
+                    queue.Add(message);
+                }
             }
+            else if (price <= stock.BuyPrice)
+            {
+                Util.Logger.Log($"Recommend buying since the price is {price:C2} <= {stock.BuyPrice:C2}");
+                
+                foreach (var receiver in notify.Receivers)
+                {
+                    var message = Email.Message.Buy(notify.Sender, receiver, stock, price);
+                    queue.Add(message);
+                }
+            }
+            else
+            {
+                Util.Logger.Log($"Didn't recommend anything since price is {price:C2}");
+            }
+            
+            Thread.Sleep((int)api.Period);
         }
     }
-    
 
-    private static async void Consumer(Email.Host host, BlockingCollection<MailMessage> queue) {
+    private static async Task Consumer(Email.Host host, BlockingCollection<MailMessage> queue) {
         using var client = new Email.Client(host);
 
         while (true)
@@ -66,15 +85,7 @@ internal static class Program
             }
 
             Util.Logger.Log($"Sending message: From = {message.From}, To = {message.To}, Subject = {message.Subject}");
-
-            try
-            {
-                await client.Send(message);
-            }
-            catch (Exception exception)
-            {
-                Util.Error.Exit($"Failed to send email: {exception.Message}", Email.Client.ErrorCode);
-            }
+            await client.Send(message);
 
             // Avoid passing the SMTP server rate limit
             Thread.Sleep((int)host.Period);
