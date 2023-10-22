@@ -1,5 +1,5 @@
 ﻿using System.Net.Mail;
-using System.Collections.Concurrent;
+using System.Threading.Channels;
 using System.Diagnostics.CodeAnalysis;
 
 
@@ -14,23 +14,18 @@ internal static class Program
         Util.Logger.Log($"Parsed settings: {settings}");
 
 
-        using var queue = new BlockingCollection<MailMessage>();
-
-        Console.CancelKeyPress += delegate
-        {
-            queue.CompleteAdding();
-        };
+        var queue = Channel.CreateUnbounded<MailMessage>(new() { SingleReader = true, SingleWriter = true });
 
 
-        using var producer = Task.Run(() => Producer(settings.Api, stock, settings.Notify, queue));
-        using var consumer = Task.Run(() => Consumer(settings.Host, queue));
+        using var producer = Producer(settings.Api, stock, settings.Notify, queue.Writer);
+        using var consumer = Consumer(settings.Host, queue.Reader);
 
         await Task.WhenAll(producer, consumer);
     }
 
 
     [DoesNotReturn]
-    private static async Task Producer(Api.Info api, Stock.Info stock, Email.Notify notify, BlockingCollection<MailMessage> queue)
+    private static async Task Producer(Api.Info api, Stock.Info stock, Email.Notify notify, ChannelWriter<MailMessage> queue)
     {
         var client = new Api.Client(api);
         
@@ -45,7 +40,7 @@ internal static class Program
                 foreach (var receiver in notify.Receivers)
                 {
                     var message = Email.Message.Sell(notify.Sender, receiver, stock, price);
-                    queue.Add(message);
+                    await queue.WriteAsync(message);
                 }
             }
             else if (price <= stock.BuyPrice)
@@ -55,19 +50,19 @@ internal static class Program
                 foreach (var receiver in notify.Receivers)
                 {
                     var message = Email.Message.Buy(notify.Sender, receiver, stock, price);
-                    queue.Add(message);
+                    await queue.WriteAsync(message);
                 }
             }
             else
             {
                 Util.Logger.Log($"Didn't recommend anything since price is {price:C2}");
             }
-            
-            Thread.Sleep((int)api.Period);
+
+            await Task.Delay((int)api.Period);
         }
     }
 
-    private static async Task Consumer(Email.Host host, BlockingCollection<MailMessage> queue) {
+    private static async Task Consumer(Email.Host host, ChannelReader<MailMessage> queue) {
         using var client = new Email.Client(host);
 
         while (true)
@@ -76,9 +71,9 @@ internal static class Program
 
             try
             {
-                message = queue.Take();
+                message = await queue.ReadAsync();
             }
-            catch (InvalidOperationException)
+            catch (ChannelClosedException)
             {
                 // The queue concluded adding and is now empty
                 return;
@@ -88,7 +83,7 @@ internal static class Program
             await client.Send(message);
 
             // Avoid passing the SMTP server rate limit
-            Thread.Sleep((int)host.Period);
+            await Task.Delay((int)host.Period);
         }
     }
 }
