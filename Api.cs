@@ -21,13 +21,13 @@ internal class Client
     }
 
 
-    public async Task<decimal> Get(Stock.Info stock)
+    public async Task<decimal> Get(string ticker)
     {
         var content = "";
         
         try
         {
-            using var response = await _client.GetAsync(Url(stock.Ticker, _token));
+            using var response = await _client.GetAsync(Url(ticker, _token));
             response.EnsureSuccessStatusCode();
 
             content = await response.Content.ReadAsStringAsync();

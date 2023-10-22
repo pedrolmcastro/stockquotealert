@@ -31,7 +31,7 @@ internal static class Program
         
         while (true)
         {
-            var price = await client.Get(stock);
+            var price = await client.Get(stock.Ticker);
 
             if (price >= stock.SellPrice)
             {
